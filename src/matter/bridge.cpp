@@ -72,8 +72,9 @@ Expected<uint16_t> MatterBridge::add_device(std::shared_ptr<Device> device) {
     // - Register attribute handlers
     // - Register command handlers
     
-    // Assign endpoint ID (start from 1, 0 is reserved for bridge)
-    uint16_t endpoint_id = static_cast<uint16_t>(devices_.size() + 1);
+    // Assign endpoint ID using monotonically increasing counter
+    // Endpoint 0 is reserved for bridge device
+    uint16_t endpoint_id = next_endpoint_id_++;
     
     devices_[device_id] = device;
     device_endpoints_[device_id] = endpoint_id;

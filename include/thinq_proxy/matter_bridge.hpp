@@ -107,6 +107,7 @@ private:
     
     std::map<std::string, std::shared_ptr<Device>> devices_;
     std::map<std::string, uint16_t> device_endpoints_;
+    uint16_t next_endpoint_id_{1};  // Monotonically increasing endpoint counter
 };
 
 } // namespace thinq_proxy

@@ -41,7 +41,14 @@ Expected<void> Device::send_command(const std::string& command,
         bool first = true;
         for (const auto& [key, value] : params) {
             if (!first) json_params += ",";
-            json_params += std::format(R"("{}": "{}")", key, value);
+            // Basic escaping for JSON strings
+            std::string escaped_value = value;
+            size_t pos = 0;
+            while ((pos = escaped_value.find('"', pos)) != std::string::npos) {
+                escaped_value.replace(pos, 1, "\\\"");
+                pos += 2;
+            }
+            json_params += std::format(R"("{}": "{}")", key, escaped_value);
             first = false;
         }
         json_params += "}";

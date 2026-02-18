@@ -5,6 +5,7 @@
 #include <curl/curl.h>
 #include <format>
 #include <stdexcept>
+#include <mutex>
 
 namespace thinq_proxy {
 
@@ -12,8 +13,20 @@ namespace thinq_proxy {
 struct ApiClient::Impl {
     CURL* curl{nullptr};
     
+    // Static initialization flag for curl_global_init
+    static bool curl_initialized;
+    static std::mutex curl_init_mutex;
+    
+    static void ensure_curl_init() {
+        std::lock_guard<std::mutex> lock(curl_init_mutex);
+        if (!curl_initialized) {
+            curl_global_init(CURL_GLOBAL_DEFAULT);
+            curl_initialized = true;
+        }
+    }
+    
     Impl() {
-        curl_global_init(CURL_GLOBAL_DEFAULT);
+        ensure_curl_init();
         curl = curl_easy_init();
         if (!curl) {
             throw std::runtime_error("Failed to initialize curl");
@@ -24,7 +37,8 @@ struct ApiClient::Impl {
         if (curl) {
             curl_easy_cleanup(curl);
         }
-        curl_global_cleanup();
+        // Note: curl_global_cleanup() should be called at application exit,
+        // not here, as other ApiClient instances may still be using curl
     }
     
     // Callback for curl write data
@@ -35,6 +49,10 @@ struct ApiClient::Impl {
         return total_size;
     }
 };
+
+// Static member initialization
+bool ApiClient::Impl::curl_initialized = false;
+std::mutex ApiClient::Impl::curl_init_mutex;
 
 ApiClient::ApiClient(std::shared_ptr<Auth> auth)
     : pimpl_(std::make_unique<Impl>())

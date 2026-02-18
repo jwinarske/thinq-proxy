@@ -11,14 +11,19 @@
 #include <chrono>
 #include <csignal>
 #include <atomic>
+#include <condition_variable>
+#include <mutex>
 
 using namespace thinq_proxy;
 
 std::atomic<bool> running{true};
+std::condition_variable shutdown_cv;
+std::mutex shutdown_mutex;
 
 void signal_handler(int signal) {
     std::cout << "\nReceived signal " << signal << ", shutting down...\n";
     running = false;
+    shutdown_cv.notify_all();
 }
 
 int main(int argc, char* argv[]) {
@@ -144,10 +149,9 @@ int main(int argc, char* argv[]) {
                       << sync_result.error().to_string() << "\n";
         }
 
-        // Sleep until next poll
-        for (int i = 0; i < config.thinq_config.poll_interval_sec && running; i++) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
+        // Wait for either timeout or shutdown signal
+        std::unique_lock<std::mutex> lock(shutdown_mutex);
+        shutdown_cv.wait_for(lock, poll_interval, [] { return !running.load(); });
     }
 
     // Clean shutdown
