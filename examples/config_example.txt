@@ -1,0 +1,11 @@
+# ThinQ Proxy Configuration Example
+# Copy this file to config.txt and fill in your credentials
+
+# Your Personal Access Token from LG ThinQ Connect
+pat_token=YOUR_PAT_TOKEN_HERE
+
+# Your Client ID from LG ThinQ Connect
+client_id=YOUR_CLIENT_ID_HERE
+
+# Country code (US, KR, EU, UK, JP, CN)
+country=US
