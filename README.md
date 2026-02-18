@@ -58,13 +58,79 @@ This project provides a local proxy/bridge that connects LG ThinQ Connect smart 
 - **C++ Compiler**: GCC 13+, Clang 16+, or MSVC 19.35+ with C++23 support
 - **CMake**: 3.25 or later
 - **libcurl**: For HTTP requests
-- **Matter SDK**: For Matter protocol support (optional for build testing)
+- **Matter SDK** (optional): For Matter protocol support
 
 ### Runtime Requirements
 
 - **ThinQ Developer Account**: [Register here](https://connect.lgthinq.com/)
 - **Personal Access Token (PAT)**: Generate from ThinQ Developer Portal
 - **Client ID**: From ThinQ Developer Portal
+
+## Matter SDK Integration
+
+The ThinQ Proxy can be built with or without the Matter SDK:
+
+### Option 1: Build Without Matter SDK (Default)
+
+By default, the project builds without Matter SDK integration. This allows you to:
+- Develop and test ThinQ API integration
+- Test device discovery and control
+- Prepare for Matter integration
+
+The Matter bridge will use placeholder implementations that log device state locally without actual Matter protocol support.
+
+```bash
+cmake ..
+cmake --build .
+```
+
+### Option 2: Build With Matter SDK
+
+To enable full Matter protocol support, you need to build and install the Matter SDK from [project-chip/connectedhomeip](https://github.com/project-chip/connectedhomeip) first.
+
+#### Building Matter SDK
+
+```bash
+# Clone the Matter SDK repository
+git clone https://github.com/project-chip/connectedhomeip.git
+cd connectedhomeip
+
+# Initialize submodules
+git submodule update --init
+
+# Activate environment
+source scripts/activate.sh
+
+# Build for Linux (example for x86_64)
+# This creates libraries in out/host
+./scripts/build/build_examples.py --target linux-x64-all-clusters build
+
+# The built libraries will be in:
+# - Include files: src/ (various subdirectories)
+# - Libraries: out/host/obj/lib/
+```
+
+#### Building ThinQ Proxy with Matter SDK
+
+Once the Matter SDK is built, configure ThinQ Proxy to use it:
+
+```bash
+cd thinq-proxy
+mkdir build && cd build
+
+# Option A: Set MATTER_SDK_PATH to your Matter SDK build
+cmake .. \
+  -DENABLE_MATTER_SDK=ON \
+  -DMATTER_SDK_PATH=/path/to/connectedhomeip
+
+# Option B: Install Matter SDK to standard location
+# (If Matter SDK is installed to /usr/local or /usr)
+cmake .. -DENABLE_MATTER_SDK=ON
+
+cmake --build .
+```
+
+**Note:** Matter SDK integration is experimental. The actual implementation depends on your Matter SDK version and may require adjustments to the source code.
 
 ## Building
 
@@ -93,8 +159,17 @@ sudo cmake --install .
 ```bash
 cmake .. \
   -DCMAKE_BUILD_TYPE=Release \
-  -DBUILD_EXAMPLES=ON
+  -DBUILD_EXAMPLES=ON \
+  -DENABLE_MATTER_SDK=OFF  # Set to ON to enable Matter SDK (requires pre-built SDK)
 ```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `BUILD_EXAMPLES` | `ON` | Build example programs |
+| `ENABLE_MATTER_SDK` | `OFF` | Enable Matter SDK integration |
+| `MATTER_SDK_PATH` | - | Path to Matter SDK installation |
+| `CMAKE_BUILD_TYPE` | `Release` | Build type (Debug/Release/RelWithDebInfo) |
+| `CMAKE_INSTALL_PREFIX` | `/usr/local` | Installation directory |
 
 ## Configuration
 

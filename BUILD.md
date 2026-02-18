@@ -79,6 +79,42 @@ sudo cmake --install .
 - `thinq_proxy_lib` - Static library
 - `basic_bridge` - Example application (if BUILD_EXAMPLES=ON)
 
+## Building with Matter SDK
+
+To enable full Matter protocol support, you need to build the Matter SDK first. See [MATTER_SDK.md](MATTER_SDK.md) for detailed instructions.
+
+### Quick Start with Matter SDK
+
+```bash
+# 1. Build Matter SDK (one-time setup)
+git clone https://github.com/project-chip/connectedhomeip.git
+cd connectedhomeip
+git submodule update --init
+source scripts/activate.sh
+./scripts/build/build_examples.py --target linux-x64-all-clusters build
+
+# 2. Build ThinQ Proxy with Matter SDK
+cd /path/to/thinq-proxy
+mkdir build && cd build
+cmake .. \
+    -DENABLE_MATTER_SDK=ON \
+    -DMATTER_SDK_PATH=/path/to/connectedhomeip
+cmake --build . -j$(nproc)
+```
+
+### Without Matter SDK (Default)
+
+By default, the project builds without Matter SDK integration. This is useful for:
+- Development and testing of ThinQ API integration
+- Building on systems where Matter SDK is not available
+- Faster iteration during development
+
+```bash
+cmake ..  # ENABLE_MATTER_SDK defaults to OFF
+cmake --build .
+```
+
+
 ## Build Output
 
 After successful build:
@@ -95,8 +131,30 @@ build/
 | Option | Default | Description |
 |--------|---------|-------------|
 | `BUILD_EXAMPLES` | `ON` | Build example programs |
+| `ENABLE_MATTER_SDK` | `OFF` | Enable Matter SDK integration |
+| `MATTER_SDK_PATH` | - | Path to Matter SDK installation |
 | `CMAKE_BUILD_TYPE` | `Release` | Build type (Debug/Release/RelWithDebInfo) |
 | `CMAKE_INSTALL_PREFIX` | `/usr/local` | Installation directory |
+
+### Example Configurations
+
+```bash
+# Default build (no Matter SDK)
+cmake ..
+
+# Debug build
+cmake .. -DCMAKE_BUILD_TYPE=Debug
+
+# With Matter SDK
+cmake .. \
+    -DENABLE_MATTER_SDK=ON \
+    -DMATTER_SDK_PATH=/opt/connectedhomeip
+
+# Custom compiler and build type
+cmake .. \
+    -DCMAKE_CXX_COMPILER=clang++-16 \
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo
+```
 
 ## Troubleshooting
 

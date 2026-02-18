@@ -19,13 +19,55 @@ endif()
 # Find required packages
 find_package(CURL REQUIRED)
 
-# Optional: Find Matter SDK
-# Uncomment when Matter SDK is available
-# find_package(matter CONFIG)
-# if(NOT matter_FOUND)
-#     find_package(PkgConfig REQUIRED)
-#     pkg_check_modules(MATTER REQUIRED matter)
-# endif()
+# Optional: Matter SDK integration
+# The connectedhomeip Matter SDK must be built separately due to its complexity.
+# See README.md for Matter SDK build instructions.
+option(ENABLE_MATTER_SDK "Enable Matter SDK integration (requires pre-built SDK)" OFF)
+
+if(ENABLE_MATTER_SDK)
+    # Try to find Matter SDK
+    # Users should set MATTER_SDK_PATH or CMAKE_PREFIX_PATH to the Matter SDK installation
+    find_path(MATTER_INCLUDE_DIR
+        NAMES app/server/Server.h
+        HINTS
+            ${MATTER_SDK_PATH}/include
+            ${CMAKE_PREFIX_PATH}/include
+            /usr/local/include/matter
+            /usr/include/matter
+        PATH_SUFFIXES chip
+    )
+    
+    find_library(MATTER_CORE_LIB
+        NAMES libCHIPCoreStaticLibrary.a CHIPCoreStaticLibrary
+        HINTS
+            ${MATTER_SDK_PATH}/lib
+            ${CMAKE_PREFIX_PATH}/lib
+            /usr/local/lib
+            /usr/lib
+    )
+    
+    if(MATTER_INCLUDE_DIR AND MATTER_CORE_LIB)
+        message(STATUS "Found Matter SDK:")
+        message(STATUS "  Include dir: ${MATTER_INCLUDE_DIR}")
+        message(STATUS "  Core library: ${MATTER_CORE_LIB}")
+        
+        # Get the parent directory for includes
+        get_filename_component(MATTER_INCLUDE_BASE ${MATTER_INCLUDE_DIR} DIRECTORY)
+        
+        set(MATTER_FOUND TRUE)
+        add_definitions(-DHAVE_MATTER_SDK=1)
+        
+        # Add Matter SDK libraries (simplified - may need adjustment based on actual SDK)
+        set(MATTER_LIBRARIES ${MATTER_CORE_LIB})
+    else()
+        message(WARNING "Matter SDK not found. Building without Matter support.")
+        message(WARNING "To enable Matter SDK, set MATTER_SDK_PATH or install SDK to standard location.")
+        set(MATTER_FOUND FALSE)
+    endif()
+else()
+    message(STATUS "Matter SDK integration disabled (use -DENABLE_MATTER_SDK=ON to enable)")
+    set(MATTER_FOUND FALSE)
+endif()
 
 # FetchContent for dependencies
 include(FetchContent)
@@ -60,14 +102,27 @@ target_include_directories(thinq_proxy_lib
         $<INSTALL_INTERFACE:include>
 )
 
+# Add Matter SDK include directories if available
+if(MATTER_FOUND)
+    target_include_directories(thinq_proxy_lib
+        PRIVATE
+            ${MATTER_INCLUDE_BASE}
+    )
+endif()
+
 target_link_libraries(thinq_proxy_lib
     PUBLIC
         CURL::libcurl
         glaze::glaze
-    # Uncomment when Matter SDK is available
-    # PRIVATE
-    #     matter::matter
 )
+
+# Link Matter SDK libraries if available
+if(MATTER_FOUND)
+    target_link_libraries(thinq_proxy_lib
+        PRIVATE
+            ${MATTER_LIBRARIES}
+    )
+endif()
 
 # Main executable
 add_executable(thinq-proxy src/main.cpp)
@@ -101,6 +156,10 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "C++ standard: C++${CMAKE_CXX_STANDARD}")
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "CURL found: ${CURL_FOUND}")
+message(STATUS "Matter SDK enabled: ${ENABLE_MATTER_SDK}")
+if(ENABLE_MATTER_SDK)
+    message(STATUS "Matter SDK found: ${MATTER_FOUND}")
+endif()
 message(STATUS "Build examples: ${BUILD_EXAMPLES}")
 message(STATUS "================================")
 message(STATUS "")
