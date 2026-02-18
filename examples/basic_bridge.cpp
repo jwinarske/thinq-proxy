@@ -14,6 +14,8 @@
 #include "thinq_proxy/matter_bridge.hpp"
 #include <iostream>
 #include <memory>
+#include <thread>
+#include <chrono>
 
 using namespace thinq_proxy;
 

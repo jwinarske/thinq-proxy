@@ -31,7 +31,7 @@ Expected<void> Refrigerator::set_freezer_temperature(float temp) {
     return result;
 }
 
-void Refrigerator::parse_status(const std::string& json_data) {
+void Refrigerator::parse_status([[maybe_unused]] const std::string& json_data) {
     // TODO: Parse JSON using glaze
     // Extract: fridge_temp_, freezer_temp_, door_open_
 }

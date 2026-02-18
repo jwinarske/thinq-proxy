@@ -22,19 +22,24 @@ class MatterBridge {
 public:
     /// Configuration for Matter bridge
     struct Config {
-        std::string bridge_name{"ThinQ Bridge"};
-        uint16_t vendor_id{0xFFF1};  // Test vendor ID
-        uint16_t product_id{0x8001};
-        uint16_t discriminator{3840};
-        uint32_t setup_passcode{20202021};
-        uint16_t port{5540};
+        std::string bridge_name = "ThinQ Bridge";
+        uint16_t vendor_id = 0xFFF1;  // Test vendor ID
+        uint16_t product_id = 0x8001;
+        uint16_t discriminator = 3840;
+        uint32_t setup_passcode = 20202021;
+        uint16_t port = 5540;
     };
 
     /**
-     * @brief Construct Matter bridge with configuration
+     * @brief Construct Matter bridge with default configuration
+     */
+    MatterBridge();
+    
+    /**
+     * @brief Construct Matter bridge with custom configuration
      * @param config Bridge configuration
      */
-    explicit MatterBridge(Config config = {});
+    explicit MatterBridge(Config config);
     
     /// Destructor
     ~MatterBridge();

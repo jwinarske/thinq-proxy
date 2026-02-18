@@ -32,7 +32,7 @@ Expected<void> Washer::stop() {
     return result;
 }
 
-void Washer::parse_status(const std::string& json_data) {
+void Washer::parse_status([[maybe_unused]] const std::string& json_data) {
     // TODO: Parse JSON using glaze
     // Extract: state_, remaining_time_
 }

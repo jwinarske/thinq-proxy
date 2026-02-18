@@ -50,7 +50,7 @@ Expected<void> AirConditioner::set_mode(Mode mode) {
     return result;
 }
 
-void AirConditioner::parse_status(const std::string& json_data) {
+void AirConditioner::parse_status([[maybe_unused]] const std::string& json_data) {
     // TODO: Parse JSON using glaze
     // Extract: current_temp_, target_temp_, power_on_, mode_
 }

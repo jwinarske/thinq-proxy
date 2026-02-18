@@ -69,7 +69,7 @@ protected:
     std::shared_ptr<ApiClient> client_;
     
     /// Parse device-specific status (override in subclasses)
-    virtual void parse_status(const std::string& json_data) {}
+    virtual void parse_status([[maybe_unused]] const std::string& json_data) {}
 };
 
 /**

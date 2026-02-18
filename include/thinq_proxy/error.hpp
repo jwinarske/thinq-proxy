@@ -56,8 +56,8 @@ inline Expected<T> make_error(ErrorCode code, std::string message, int status = 
 
 /// Helper to create success result
 template<typename T>
-inline Expected<T> make_success(T&& value) {
-    return Expected<T>(std::forward<T>(value));
+inline Expected<std::remove_cvref_t<T>> make_success(T&& value) {
+    return Expected<std::remove_cvref_t<T>>(std::forward<T>(value));
 }
 
 } // namespace thinq_proxy

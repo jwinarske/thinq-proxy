@@ -19,6 +19,11 @@ struct MatterBridge::Impl {
     bool initialized{false};
 };
 
+MatterBridge::MatterBridge()
+    : pimpl_(std::make_unique<Impl>())
+    , config_(Config{}) {
+}
+
 MatterBridge::MatterBridge(Config config)
     : pimpl_(std::make_unique<Impl>())
     , config_(std::move(config)) {

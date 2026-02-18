@@ -92,7 +92,7 @@ struct ApiEndpoints {
 };
 
 /// Get API endpoints for country
-inline ApiEndpoints get_endpoints(CountryCode country) {
+inline ApiEndpoints get_endpoints([[maybe_unused]] CountryCode country) {
     // ThinQ Connect API endpoints
     const std::string base = "https://connect.lgthinq.com";
     return ApiEndpoints{
