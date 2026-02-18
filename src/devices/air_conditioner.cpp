@@ -22,7 +22,7 @@ Result<void> AirConditioner::update_status(const std::string& status_data) {
     return {};
 }
 
-Result<void> AirConditioner::send_command(const std::string& command, const std::string& parameters) {
+Result<void> AirConditioner::send_command(const std::string& command, [[maybe_unused]] const std::string& parameters) {
     // Validate and prepare command for ThinQ API
     // Commands: "power-on", "power-off", "set-temperature", "set-mode"
     

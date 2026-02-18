@@ -17,7 +17,7 @@ Result<void> Washer::update_status(const std::string& status_data) {
     return {};
 }
 
-Result<void> Washer::send_command(const std::string& command, const std::string& parameters) {
+Result<void> Washer::send_command(const std::string& command, [[maybe_unused]] const std::string& parameters) {
     if (command.empty()) {
         return std::unexpected(make_error_code(ErrorCode::DeviceCommandFailed));
     }

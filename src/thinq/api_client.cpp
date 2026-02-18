@@ -90,7 +90,7 @@ public:
     }
     
     Result<void> send_device_command(const std::string& device_id,
-                                     const std::string& command,
+                                     [[maybe_unused]] const std::string& command,
                                      const std::string& parameters) {
         if (!curl_) {
             return std::unexpected(make_error_code(ErrorCode::NetworkError));
