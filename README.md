@@ -62,7 +62,7 @@ This project provides a local proxy/bridge that connects LG ThinQ Connect smart 
 
 ### Runtime Requirements
 
-- **ThinQ Developer Account**: [Register here](https://connect.lgthinq.com/)
+- **ThinQ Developer Account**: [Register here](https://smartsolution.developer.lge.com/en/apiManage/thinq_connect)
 - **Personal Access Token (PAT)**: Generate from ThinQ Developer Portal
 - **Client ID**: From ThinQ Developer Portal
 

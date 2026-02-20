@@ -92,14 +92,29 @@ struct ApiEndpoints {
 };
 
 /// Get API endpoints for country
-inline ApiEndpoints get_endpoints([[maybe_unused]] CountryCode country) {
-    // ThinQ Connect API endpoints
-    const std::string base = "https://connect.lgthinq.com";
+inline ApiEndpoints get_endpoints(CountryCode country) {
+    std::string base;
+    switch (country) {
+        case CountryCode::US:
+        case CountryCode::CA:
+            base = "https://api-aic.lgthinq.com";
+            break;
+        case CountryCode::EU:
+        case CountryCode::GB:
+            base = "https://api-eic.lgthinq.com";
+            break;
+        case CountryCode::KR:
+        case CountryCode::AU:
+        case CountryCode::JP:
+            base = "https://api-kic.lgthinq.com";
+            break;
+    }
+
     return ApiEndpoints{
         .base_url = base,
         .oauth_url = base + "/oauth",
-        .device_url = base + "/api/v1/devices",
-        .control_url = base + "/api/v1/devices"
+        .device_url = base + "/devices",
+        .control_url = base + "/devices"
     };
 }
 

@@ -8,14 +8,15 @@
  * a ThinQ to Matter bridge.
  */
 
+#include <chrono>
+#include <iostream>
+#include <memory>
+#include <thread>
+
 #include "thinq_proxy/auth.hpp"
 #include "thinq_proxy/api_client.hpp"
 #include "thinq_proxy/device.hpp"
 #include "thinq_proxy/matter_bridge.hpp"
-#include <iostream>
-#include <memory>
-#include <thread>
-#include <chrono>
 
 using namespace thinq_proxy;
 

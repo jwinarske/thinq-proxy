@@ -1,24 +1,56 @@
 // Copyright 2024 ThinQ Proxy Contributors
 // Licensed under the Apache License, Version 2.0
 
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <csignal>
+#include <iostream>
+#include <mutex>
+#include <thread>
+
 #include "thinq_proxy/config.hpp"
 #include "thinq_proxy/auth.hpp"
 #include "thinq_proxy/api_client.hpp"
 #include "thinq_proxy/device.hpp"
 #include "thinq_proxy/matter_bridge.hpp"
-#include <iostream>
-#include <thread>
-#include <chrono>
-#include <csignal>
-#include <atomic>
-#include <condition_variable>
-#include <mutex>
+#include "glaze/glaze.hpp"
 
 using namespace thinq_proxy;
 
 std::atomic<bool> running{true};
 std::condition_variable shutdown_cv;
 std::mutex shutdown_mutex;
+
+void print_device_status(ApiClient& client, const DeviceInfo& device_info) {
+    auto status_result = client.get_device_status(device_info.device_id);
+    if (!status_result) {
+        std::cerr << "    status error: " << status_result.error().to_string() << "\n";
+        return;
+    }
+
+    const auto& status = status_result.value();
+    std::cout << "    status: online=" << (status.online ? "true" : "false")
+              << ", type=" << to_string(status.type)
+              << ", last_update_ms=" << status.last_update_ms << "\n";
+}
+
+void print_device_profile(ApiClient& client, const DeviceInfo& device_info) {
+    auto profile_result = client.get_device_profile(device_info.device_id);
+    if (!profile_result) {
+        std::cerr << "    profile error: " << profile_result.error().to_string() << "\n";
+        return;
+    }
+
+    std::string pretty_profile;
+    glz::prettify_json(profile_result.value(), pretty_profile);
+    if (pretty_profile.empty()) {
+        std::cout << "    profile: " << profile_result.value() << "\n";
+        return;
+    }
+
+    std::cout << "    profile:\n" << pretty_profile << "\n";
+}
 
 void signal_handler(int signal) {
     std::cout << "\nReceived signal " << signal << ", shutting down...\n";
@@ -89,6 +121,8 @@ int main(int argc, char* argv[]) {
     for (const auto& info : device_infos) {
         std::cout << "  - " << info.device_name 
                   << " (" << to_string(info.type) << ")\n";
+        print_device_status(*thinq_client, info);
+        print_device_profile(*thinq_client, info);
         devices.push_back(create_device(info, thinq_client));
     }
 
