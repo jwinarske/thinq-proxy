@@ -6,6 +6,7 @@
 #include "glaze/glaze.hpp"
 
 #include <iostream>
+#include <mutex>
 #include <array>
 #include <random>
 #include <chrono>
