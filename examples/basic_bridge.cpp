@@ -9,9 +9,10 @@
  */
 
 #include <chrono>
-#include <iostream>
 #include <memory>
 #include <thread>
+
+#include <spdlog/spdlog.h>
 
 #include "thinq_proxy/auth.hpp"
 #include "thinq_proxy/api_client.hpp"
@@ -35,17 +36,16 @@ int main() {
     // 3. Discover devices
     auto devices_result = api_client->get_devices();
     if (!devices_result) {
-        std::cerr << "Failed to get devices: " 
-                  << devices_result.error().to_string() << "\n";
+        spdlog::error("Failed to get devices: {}", devices_result.error().to_string());
         return 1;
     }
 
-    std::cout << "Found " << devices_result.value().size() << " device(s)\n";
+    spdlog::info("Found {} device(s)", devices_result.value().size());
 
     // 4. Create device objects
     std::vector<std::shared_ptr<Device>> devices;
     for (const auto& info : devices_result.value()) {
-        std::cout << "  - " << info.device_name << "\n";
+        spdlog::info("  - {}", info.device_name);
         devices.push_back(create_device(info, api_client));
     }
 
@@ -58,8 +58,7 @@ int main() {
     // 6. Initialize bridge
     auto init_result = bridge.initialize();
     if (!init_result) {
-        std::cerr << "Failed to initialize bridge: "
-                  << init_result.error().to_string() << "\n";
+        spdlog::error("Failed to initialize bridge: {}", init_result.error().to_string());
         return 1;
     }
 
@@ -67,22 +66,20 @@ int main() {
     for (auto& device : devices) {
         auto add_result = bridge.add_device(device);
         if (!add_result) {
-            std::cerr << "Failed to add device: "
-                      << add_result.error().to_string() << "\n";
+            spdlog::error("Failed to add device: {}", add_result.error().to_string());
             continue;
         }
-        std::cout << "Added device as endpoint " << add_result.value() << "\n";
+        spdlog::info("Added device as endpoint {}", add_result.value());
     }
 
     // 8. Start bridge
     auto start_result = bridge.start();
     if (!start_result) {
-        std::cerr << "Failed to start bridge: "
-                  << start_result.error().to_string() << "\n";
+        spdlog::error("Failed to start bridge: {}", start_result.error().to_string());
         return 1;
     }
 
-    std::cout << "\nBridge is running. Press Ctrl+C to stop.\n";
+    spdlog::info("\nBridge is running. Press Ctrl+C to stop.");
 
     // 9. Main loop
     while (true) {

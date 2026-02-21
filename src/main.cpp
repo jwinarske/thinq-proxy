@@ -5,9 +5,10 @@
 #include <chrono>
 #include <condition_variable>
 #include <csignal>
-#include <iostream>
 #include <mutex>
 #include <thread>
+
+#include <spdlog/spdlog.h>
 
 #include "thinq_proxy/config.hpp"
 #include "thinq_proxy/auth.hpp"
@@ -25,42 +26,45 @@ std::mutex shutdown_mutex;
 void print_device_status(ApiClient& client, const DeviceInfo& device_info) {
     auto status_result = client.get_device_status(device_info.device_id);
     if (!status_result) {
-        std::cerr << "    status error: " << status_result.error().to_string() << "\n";
+        spdlog::error("    status error: {}", status_result.error().to_string());
         return;
     }
 
     const auto& status = status_result.value();
-    std::cout << "    status: online=" << (status.online ? "true" : "false")
-              << ", type=" << to_string(status.type)
-              << ", last_update_ms=" << status.last_update_ms << "\n";
+    spdlog::info("    status: online={}, type={}, last_update_ms={}",
+                 (status.online ? "true" : "false"),
+                 to_string(status.type),
+                 status.last_update_ms);
 }
 
 void print_device_profile(ApiClient& client, const DeviceInfo& device_info) {
     auto profile_result = client.get_device_profile(device_info.device_id);
     if (!profile_result) {
-        std::cerr << "    profile error: " << profile_result.error().to_string() << "\n";
+        spdlog::error("    profile error: {}", profile_result.error().to_string());
         return;
     }
 
     std::string pretty_profile;
     glz::prettify_json(profile_result.value(), pretty_profile);
     if (pretty_profile.empty()) {
-        std::cout << "    profile: " << profile_result.value() << "\n";
+        spdlog::info("    profile: {}", profile_result.value());
         return;
     }
 
-    std::cout << "    profile:\n" << pretty_profile << "\n";
+    spdlog::info("    profile:\n{}", pretty_profile);
 }
 
 void signal_handler(int signal) {
-    std::cout << "\nReceived signal " << signal << ", shutting down...\n";
+    spdlog::info("\nReceived signal {}, shutting down...", signal);
     running = false;
     shutdown_cv.notify_all();
 }
 
 int main(int argc, char* argv[]) {
-    std::cout << "ThinQ to Matter Bridge v0.1.0\n";
-    std::cout << "Copyright 2024 ThinQ Proxy Contributors\n\n";
+    spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
+
+    spdlog::info("ThinQ to Matter Bridge v0.1.0");
+    spdlog::info("Copyright 2024 ThinQ Proxy Contributors");
 
     // Set up signal handlers
     std::signal(SIGINT, signal_handler);
@@ -72,24 +76,23 @@ int main(int argc, char* argv[]) {
         config_path = argv[1];
     }
 
-    std::cout << "Loading configuration from " << config_path << "...\n";
+    spdlog::info("Loading configuration from {}...", config_path);
     auto config_result = Config::load(config_path);
     if (!config_result) {
-        std::cerr << "Error loading configuration: " 
-                  << config_result.error().to_string() << "\n";
-        std::cerr << "Please create a config.json file with your credentials.\n";
-        std::cerr << "See examples/config_example.json for reference.\n";
+        spdlog::error("Error loading configuration: {}", config_result.error().to_string());
+        spdlog::error("Please create a config.json file with your credentials.");
+        spdlog::error("See examples/config_example.json for reference.");
         return 1;
     }
 
     auto config = config_result.value();
     if (!config.is_valid()) {
-        std::cerr << "Invalid configuration: missing required fields\n";
+        spdlog::error("Invalid configuration: missing required fields");
         return 1;
     }
 
     // 2. Initialize ThinQ API client
-    std::cout << "Initializing ThinQ API client...\n";
+    spdlog::info("Initializing ThinQ API client...");
     auto auth = std::make_shared<Auth>(
         config.thinq_config.pat_token,
         config.thinq_config.client_id,
@@ -100,73 +103,67 @@ int main(int argc, char* argv[]) {
     thinq_client->set_timeout(30000); // 30 second timeout
 
     // 3. Discover devices
-    std::cout << "Discovering ThinQ devices...\n";
+    spdlog::info("Discovering ThinQ devices...");
     auto devices_result = thinq_client->get_devices();
     if (!devices_result) {
-        std::cerr << "Error discovering devices: " 
-                  << devices_result.error().to_string() << "\n";
+        spdlog::error("Error discovering devices: {}", devices_result.error().to_string());
         return 1;
     }
 
     auto device_infos = devices_result.value();
-    std::cout << "Found " << device_infos.size() << " device(s)\n";
+    spdlog::info("Found {} device(s)", device_infos.size());
 
     if (device_infos.empty()) {
-        std::cout << "No devices found. Make sure you have ThinQ devices registered.\n";
+        spdlog::info("No devices found. Make sure you have ThinQ devices registered.");
         return 0;
     }
 
     // Create device objects
     std::vector<std::shared_ptr<Device>> devices;
     for (const auto& info : device_infos) {
-        std::cout << "  - " << info.device_name 
-                  << " (" << to_string(info.type) << ")\n";
+        spdlog::info("  - {} ({})", info.device_name, to_string(info.type));
         print_device_status(*thinq_client, info);
         print_device_profile(*thinq_client, info);
         devices.push_back(create_device(info, thinq_client));
     }
 
     // 4. Initialize Matter bridge
-    std::cout << "\nInitializing Matter bridge...\n";
+    spdlog::info("\nInitializing Matter bridge...");
     MatterBridge matter_bridge(config.matter_config);
     
     auto init_result = matter_bridge.initialize();
     if (!init_result) {
-        std::cerr << "Error initializing Matter bridge: " 
-                  << init_result.error().to_string() << "\n";
+        spdlog::error("Error initializing Matter bridge: {}", init_result.error().to_string());
         return 1;
     }
 
     // 5. Add ThinQ devices to Matter bridge
-    std::cout << "Adding devices to Matter bridge...\n";
+    spdlog::info("Adding devices to Matter bridge...");
     for (const auto& device : devices) {
         auto endpoint_result = matter_bridge.add_device(device);
         if (!endpoint_result) {
-            std::cerr << "Warning: Failed to add device " 
-                      << device->device_name() << ": "
-                      << endpoint_result.error().to_string() << "\n";
+            spdlog::warn("Failed to add device {}: {}",
+                          device->device_name(), endpoint_result.error().to_string());
             continue;
         }
-        std::cout << "  - Added " << device->device_name() 
-                  << " as endpoint " << endpoint_result.value() << "\n";
+        spdlog::info("  - Added {} as endpoint {}", device->device_name(), endpoint_result.value());
     }
 
     // 6. Start bridge
-    std::cout << "\nStarting Matter bridge...\n";
+    spdlog::info("\nStarting Matter bridge...");
     auto start_result = matter_bridge.start();
     if (!start_result) {
-        std::cerr << "Error starting Matter bridge: " 
-                  << start_result.error().to_string() << "\n";
+        spdlog::error("Error starting Matter bridge: {}", start_result.error().to_string());
         return 1;
     }
 
-    std::cout << "\n=== Bridge Ready ===\n";
-    std::cout << "Bridge Name: " << config.matter_config.bridge_name << "\n";
-    std::cout << "Setup Code: " << config.matter_config.setup_passcode << "\n";
-    std::cout << "Discriminator: " << config.matter_config.discriminator << "\n";
-    std::cout << "Port: " << config.matter_config.port << "\n";
-    std::cout << "\nCommission this bridge using your Matter controller.\n";
-    std::cout << "Press Ctrl+C to stop.\n\n";
+    spdlog::info("\n=== Bridge Ready ===");
+    spdlog::info("Bridge Name: {}", config.matter_config.bridge_name);
+    spdlog::info("Setup Code: {}", config.matter_config.setup_passcode);
+    spdlog::info("Discriminator: {}", config.matter_config.discriminator);
+    spdlog::info("Port: {}", config.matter_config.port);
+    spdlog::info("\nCommission this bridge using your Matter controller.");
+    spdlog::info("Press Ctrl+C to stop.");
 
     // 7. Main loop - poll ThinQ API and sync Matter state
     auto poll_interval = std::chrono::seconds(config.thinq_config.poll_interval_sec);
@@ -174,13 +171,12 @@ int main(int argc, char* argv[]) {
 
     while (running) {
         cycle++;
-        std::cout << "Sync cycle " << cycle << "...\n";
+        spdlog::info("Sync cycle {}...", cycle);
 
         // Sync state between ThinQ and Matter
         auto sync_result = matter_bridge.sync_state();
         if (!sync_result) {
-            std::cerr << "Warning: Sync failed: " 
-                      << sync_result.error().to_string() << "\n";
+            spdlog::warn("Sync failed: {}", sync_result.error().to_string());
         }
 
         // Wait for either timeout or shutdown signal
@@ -189,9 +185,9 @@ int main(int argc, char* argv[]) {
     }
 
     // Clean shutdown
-    std::cout << "\nStopping Matter bridge...\n";
+    spdlog::info("\nStopping Matter bridge...");
     matter_bridge.stop();
-    std::cout << "Shutdown complete.\n";
+    spdlog::info("Shutdown complete.");
 
     return 0;
 }

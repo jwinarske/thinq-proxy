@@ -2,7 +2,8 @@
 // Licensed under the Apache License, Version 2.0
 
 #include <cstdint>
-#include <iostream>
+
+#include <spdlog/spdlog.h>
 
 #include "glaze/glaze.hpp"
 
@@ -52,7 +53,7 @@ bool is_valid_setup_passcode(uint32_t setup_passcode) {
   return setup_passcode >= 10000000 && setup_passcode <= 99999999;
 }
 
-void print_config_file(const ConfigFile& config_file, std::ostream& out = std::cout) {
+void print_config_file(const ConfigFile& config_file) {
   auto printable = config_file;
   if (!printable.thinq.pat_token.empty()) {
     printable.thinq.pat_token = "***REDACTED***";
@@ -60,13 +61,13 @@ void print_config_file(const ConfigFile& config_file, std::ostream& out = std::c
 
   const auto json_result = glz::write_json(printable);
   if (!json_result) {
-    out << "ConfigFile serialization failed: " << glz::format_error(json_result) << '\n';
+    spdlog::error("ConfigFile serialization failed: {}", glz::format_error(json_result));
     return;
   }
 
   std::string pretty_json;
   glz::prettify_json(json_result.value(), pretty_json);
-  out << "ConfigFile:\n" << pretty_json << '\n';
+  spdlog::info("ConfigFile:\n{}", pretty_json);
 }
 
 } // namespace
