@@ -39,6 +39,7 @@ brew install cmake curl
 ```bash
 git clone https://github.com/jwinarske/thinq-proxy.git
 cd thinq-proxy
+git submodule update --init --recursive
 ```
 
 ### 2. Create Build Directory

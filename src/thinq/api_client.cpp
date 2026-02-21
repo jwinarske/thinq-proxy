@@ -5,7 +5,7 @@
 #include <curl/curl.h>
 #include "glaze/glaze.hpp"
 
-#include <iostream>
+#include <spdlog/spdlog.h>
 #include <mutex>
 #include <array>
 #include <random>
@@ -191,9 +191,9 @@ std::vector<DeviceInfo> to_device_infos(const std::vector<ThinQDevicePayload>& p
     return devices;
 }
 
-void print_response_json(const std::string& response_body, std::ostream& out = std::cout) {
+void print_response_json(const std::string& response_body) {
     if (response_body.empty()) {
-        out << "ThinQ response: <empty>\n";
+        spdlog::info("ThinQ response: <empty>");
         return;
     }
 
@@ -201,11 +201,11 @@ void print_response_json(const std::string& response_body, std::ostream& out = s
     glz::prettify_json(response_body, pretty);
 
     if (pretty.empty()) {
-        out << "ThinQ response:\n" << response_body << '\n';
+        spdlog::info("ThinQ response:\n{}", response_body);
         return;
     }
 
-    out << "ThinQ response:\n" << pretty << '\n';
+    spdlog::info("ThinQ response:\n{}", pretty);
 }
 
 } // namespace

@@ -141,6 +141,9 @@ cmake --build .
 git clone https://github.com/jwinarske/thinq-proxy.git
 cd thinq-proxy
 
+# Initialize submodules (includes spdlog)
+git submodule update --init --recursive
+
 # Create build directory
 mkdir build && cd build
 

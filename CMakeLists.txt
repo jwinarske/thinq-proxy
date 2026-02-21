@@ -69,6 +69,10 @@ else()
     set(MATTER_FOUND FALSE)
 endif()
 
+# spdlog - Structured logging via git submodule
+set(SPDLOG_USE_STD_FORMAT ON CACHE BOOL "Use std::format instead of bundled fmt" FORCE)
+add_subdirectory(third_party/spdlog)
+
 # FetchContent for dependencies
 include(FetchContent)
 
@@ -114,6 +118,7 @@ target_link_libraries(thinq_proxy_lib
     PUBLIC
         CURL::libcurl
         glaze::glaze
+        spdlog::spdlog
 )
 
 # Link Matter SDK libraries if available
